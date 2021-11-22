@@ -1,16 +1,16 @@
 package app
 
-
 import (
-"encoding/json"
-"fmt"
-	"github.com/jitin07/qastackauth/errs"
+	"encoding/json"
+	"fmt"
 	"net/http"
+
+	"github.com/jitin07/qastackauth/errs"
 )
 
 func setupCorsResponse(w *http.ResponseWriter) {
-	(*w).Header().Set("Access-Control-Allow-Origin", "http://localhost:8080")
-	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	(*w).Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+	(*w).Header().Set("Access-Control-Allow-Methods",  "GET,POST,OPTIONS,PUT,DELETE")
 	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Authorization")
 }
 
@@ -45,8 +45,8 @@ func authorizedResponse() map[string]bool {
 	return map[string]bool{"isAuthorized": true}
 }
 
-
 func writeResponse(w http.ResponseWriter, code int, data interface{}) {
+	w.Header().Add("Access-Control-Allow-Origin", "http://localhost:3000")
 	w.Header().Add("Content-Type", "application/json")
 	setupCorsResponse(&w)
 	w.WriteHeader(code)

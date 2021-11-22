@@ -14,6 +14,7 @@ type Users struct {
 	Role string		`db:"role"`
 	Project_id sql.NullString `db:"project_id"`
 
+
 }
 
 func (user Users) ToDto() dto.UsersResponse {

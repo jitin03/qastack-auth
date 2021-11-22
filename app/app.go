@@ -7,6 +7,8 @@ import (
 	"github.com/jitin07/qastackauth/domain"
 	"github.com/jitin07/qastackauth/service"
 	"github.com/jmoiron/sqlx"
+	"github.com/rs/cors"
+
 	//"log"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
@@ -15,12 +17,14 @@ import (
 )
 
 func getDbClient() *sqlx.DB {
-	client, err := sqlx.ConnectContext(context.Background(), "postgres", "host=localhost port=5432 user=postgres dbname=postgres sslmode=disable password=postgres")
+	client, err := sqlx.ConnectContext(context.Background(), "postgres", "host=localhost port=5433 user=postgres dbname=postgres sslmode=disable password=qastack")
 	if err != nil {
 		panic(err)
 	}
 	return client
 }
+
+
 
 func Start() {
 
@@ -29,23 +33,18 @@ func Start() {
 	router := mux.NewRouter()
 	dbClient := getDbClient()
 
-
+	router.Use()
 	userRepositoryDb := domain.NewUserRepositoryDb(dbClient)
 	//wiring
 	u := UserHandlers{service.NewUserService(userRepositoryDb,domain.GetRolePermissions())}
 
-	//customerRepositoryDb := domain.NewCustomerRepositoryDb(dbClient)
-	//accountRepositoryDb := domain.NewAccountRepositoryDb(dbClient)
-	//ch := CustomerHandlers{service.NewCustomerService(customerRepositoryDb)}
-	//ah := AccountHandler{service.NewAccountService(accountRepositoryDb)}
-
 	// define routes
 
-	router.HandleFunc("/api/health", func (w http.ResponseWriter,r *http.Request) {
+	router.HandleFunc("/api/auth/health", func (w http.ResponseWriter,r *http.Request) {
 		json.NewEncoder(w).Encode("Running...")
 	})
 	router.
-		HandleFunc("/api/users", u.GetAllUsers).
+		HandleFunc("/api/auth/users", u.GetAllUsers).
 		Methods(http.MethodGet)
 
 	router.
@@ -79,8 +78,19 @@ func Start() {
 	//// starting server
 	//address := os.Getenv("SERVER_ADDRESS")
 	//port := os.Getenv("SERVER_PORT")
+
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"http://localhost:3000"},
+		AllowedHeaders: []string{ "Content-Type", "Authorization","Referer"},
+		AllowCredentials: true,
+		AllowedMethods: []string{"GET","PUT","DELETE","POST"},
+	})
+
+	handler := c.Handler(router)
+
+
 	//logger.Info(fmt.Sprintf("Starting server on %s:%s ...", address, port))
-	if err := http.ListenAndServe(":8090", router); err != nil {
+	if err := http.ListenAndServe(":8090", handler); err != nil {
 		fmt.Println("Failed to set up server")
 
 	}
