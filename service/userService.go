@@ -13,7 +13,7 @@ type UserService interface {
 	GetAllUser()([]dto.UsersResponse,*errs.AppError)
 	AddUser(request dto.UsersRegisterRequest) (*dto.NewUserRegisterResponse, *errs.AppError)
 	Login(dto.LoginRequest) (*string, *errs.AppError)
-	Verify(urlParams map[string]string) *errs.AppError
+		Verify(urlParams map[string]string) *errs.AppError
 	GetUserByUsername(string) (*dto.UsersResponse,*errs.AppError)
 }
 
