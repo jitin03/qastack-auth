@@ -7,7 +7,7 @@ ENV GO111MODULE=on \
     GOARCH=amd64 \
     DB_USER=postgres \
     DB_PASSWD=Home@302017 \
-    DB_ADDR=54.237.251.167 \
+    DB_ADDR=3.229.43.168 \
     DB_PORT=5432 \
     DB_NAME=postgres
 
