@@ -3,6 +3,7 @@ package domain
 import (
 	"database/sql"
 	"fmt"
+
 	"github.com/jitin07/qastackauth/errs"
 	"github.com/jitin07/qastackauth/logger"
 	"github.com/jmoiron/sqlx"
@@ -48,7 +49,7 @@ func (d UserRepositoryDb) GetAllUser()([]Users,*errs.AppError){
 func (d UserRepositoryDb) GetUserByUsername(username string)(*Users,*errs.AppError)  {
 	var users Users
 	logger.Info(username)
-	usernameSql := "select users_id, username, password,email, role,project_id from users where username = $1 "
+	usernameSql := "select users_id, username, role from users where username = $1 "
 	err := d.client.Get(&users, usernameSql,username)
 
 
