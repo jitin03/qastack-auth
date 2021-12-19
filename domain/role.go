@@ -20,7 +20,7 @@ func (p RolePermissions) IsAuthorizedFor(role string, routeName string) bool {
 
 func GetRolePermissions() RolePermissions {
 	return RolePermissions{map[string][]string{
-		"admin": {"AllTestCases","GetAProject", "GetAllProjects", "NewProject", "UpdateProject","DeleteProject","NewRelease","GetAllRelease","GetRelease","UpdateRelease","AddComponent","AllComponent","DeleteComponent","UpdateComponent","AddTestCase"},
-		"user":  {"GetAProject", "AllTestCases","GetAllProjects", "NewProject", "UpdateProject","DeleteProject","NewRelease","GetAllRelease","GetRelease","UpdateRelease","AddComponent","AllComponent","DeleteComponent","UpdateComponent","AddTestCase"},
+		"admin": {"AddTestRuns", "AllTestCases", "GetAProject", "GetAllProjects", "NewProject", "UpdateProject", "DeleteProject", "NewRelease", "GetAllRelease", "GetRelease", "UpdateRelease", "AddComponent", "AllComponent", "DeleteComponent", "UpdateComponent", "AddTestCase"},
+		"user":  {"GetAProject", "AddTestRuns", "AllTestCases", "GetAllProjects", "NewProject", "UpdateProject", "DeleteProject", "NewRelease", "GetAllRelease", "GetRelease", "UpdateRelease", "AddComponent", "AllComponent", "DeleteComponent", "UpdateComponent", "AddTestCase"},
 	}}
 }
