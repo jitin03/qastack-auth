@@ -3,18 +3,20 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/jitin07/qastackauth/domain"
 	"github.com/jitin07/qastackauth/logger"
 	"github.com/jitin07/qastackauth/service"
 	"github.com/jmoiron/sqlx"
 	"github.com/rs/cors"
-	"os"
-	"time"
 
 	//"log"
+	"net/http"
+
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
-	"net/http"
 	//"os"
 )
 
@@ -46,8 +48,6 @@ func getDbClient() *sqlx.DB {
 	return client
 }
 
-
-
 func Start() {
 
 	//sanityCheck()
@@ -58,11 +58,11 @@ func Start() {
 	router.Use()
 	userRepositoryDb := domain.NewUserRepositoryDb(dbClient)
 	//wiring
-	u := UserHandlers{service.NewUserService(userRepositoryDb,domain.GetRolePermissions())}
+	u := UserHandlers{service.NewUserService(userRepositoryDb, domain.GetRolePermissions())}
 
 	// define routes
 
-	router.HandleFunc("/api/auth/health", func (w http.ResponseWriter,r *http.Request) {
+	router.HandleFunc("/api/auth/health", func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode("Running...")
 	})
 	router.
@@ -77,9 +77,7 @@ func Start() {
 		HandleFunc("/api/users/register", u.RegisterUser).
 		Methods(http.MethodPost)
 
-
 	router.HandleFunc("/auth/login", u.Login).Methods(http.MethodPost)
-
 
 	router.HandleFunc("/auth/verify", u.Verify).Methods(http.MethodGet)
 	//router.
@@ -102,14 +100,13 @@ func Start() {
 	//port := os.Getenv("SERVER_PORT")
 
 	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"http://localhost:3000"},
-		AllowedHeaders: []string{ "Content-Type", "Authorization","Referer"},
+		AllowedOrigins:   []string{"*"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization", "Referer"},
 		AllowCredentials: true,
-		AllowedMethods: []string{"GET","PUT","DELETE","POST"},
+		AllowedMethods:   []string{"GET", "PUT", "DELETE", "POST"},
 	})
 
 	handler := c.Handler(router)
-
 
 	//logger.Info(fmt.Sprintf("Starting server on %s:%s ...", address, port))
 	if err := http.ListenAndServe(":8090", handler); err != nil {
@@ -118,5 +115,3 @@ func Start() {
 	}
 
 }
-
-

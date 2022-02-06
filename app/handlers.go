@@ -47,8 +47,8 @@ func (u UserHandlers) GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u UserHandlers) RegisterUser(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
-	w.Header().Set("Access-Control-Allow-Methods",  "GET,POST, OPTIONS, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET,POST, OPTIONS, PUT, DELETE")
 	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Authorization")
 	var request dto.UsersRegisterRequest
 	err := json.NewDecoder(r.Body).Decode(&request)
