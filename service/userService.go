@@ -11,6 +11,7 @@ import (
 	"github.com/jitin07/qastackauth/errs"
 	"github.com/jitin07/qastackauth/logger"
 	"github.com/jitin07/qastackauth/utils"
+	"github.com/labstack/gommon/log"
 )
 
 const dbTSLayout = "2006-01-02 15:04:05"
@@ -38,8 +39,9 @@ type DefaultUserService struct {
 }
 
 func jwtTokenFromString(tokenString string) (*jwt.Token, error) {
+	log.Info(tokenString)
 	token, err := jwt.ParseWithClaims(tokenString, &domain.AccessTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(domain.SIGNKEY), nil
+		return []byte(domain.HMAC_SAMPLE_SECRET), nil
 	})
 	if err != nil {
 		logger.Error("Error while parsing token: " + err.Error())
