@@ -25,6 +25,17 @@ func JSON(w http.ResponseWriter, statusCode int, data interface{}) {
 		fmt.Fprintf(w, "%s", err.Error())
 	}
 }
+func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) error {
+	response, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.WriteHeader(code)
+	w.Write(response)
+	return nil
+}
 
 // ERROR returns a jsonified error response along with a status code.
 func ERROR(w http.ResponseWriter, statusCode int, err *errs.AppError) {
@@ -34,7 +45,7 @@ func ERROR(w http.ResponseWriter, statusCode int, err *errs.AppError) {
 	JSON(w, http.StatusBadRequest, err)
 }
 
-func notAuthorizedResponse(msg string) map[string]interface{} {
+func NotAuthorizedResponse(msg string) map[string]interface{} {
 	return map[string]interface{}{
 		"isAuthorized": false,
 		"message":      msg,

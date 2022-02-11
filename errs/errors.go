@@ -34,6 +34,12 @@ func NewValidationError(message string) *AppError {
 	}
 }
 
+func NewVerificationError(message string) *AppError {
+	return &AppError{
+		Message: message,
+		Code:    http.StatusUnprocessableEntity,
+	}
+}
 func NewAuthenticationError(message string) *AppError {
 	return &AppError{
 		Message: message,

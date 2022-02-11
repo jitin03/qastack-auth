@@ -1,7 +1,6 @@
 package domain
 
 import (
-
 	"github.com/dgrijalva/jwt-go"
 	"github.com/jitin07/qastackauth/errs"
 	"github.com/jitin07/qastackauth/logger"
