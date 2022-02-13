@@ -131,7 +131,7 @@ func (u UserHandlers) RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 // VerifyMail verifies the provided confirmation code and set the User state to verified
 func (ah *UserHandlers) VerifyMail(w http.ResponseWriter, r *http.Request) {
-
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 
 	ah.logger.Debug("verifying the confimation code")
@@ -185,7 +185,7 @@ func (ah *UserHandlers) VerifyMail(w http.ResponseWriter, r *http.Request) {
 
 // GeneratePassResetCode generate a new secret code to reset password.
 func (ah *UserHandlers) GeneratePassResetCode(w http.ResponseWriter, r *http.Request) {
-
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 
 	// userID := r.Context().Value(UserIDKey{}).(string)
@@ -241,7 +241,7 @@ func (ah *UserHandlers) GeneratePassResetCode(w http.ResponseWriter, r *http.Req
 
 // VerifyPasswordReset verifies the code provided for password reset
 func (ah *UserHandlers) VerifyPasswordReset(w http.ResponseWriter, r *http.Request) {
-
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 
 	ah.logger.Debug("verifing password reset code")
@@ -353,6 +353,7 @@ func (h *UserHandlers) Verify(w http.ResponseWriter, r *http.Request) {
 func (ah *UserHandlers) ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	email := r.URL.Query().Get("email")
 	code := r.URL.Query().Get("code")
 
