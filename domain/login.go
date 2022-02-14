@@ -2,62 +2,75 @@ package domain
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/jitin07/qastackauth/errs"
 	"github.com/jitin07/qastackauth/logger"
-	"time"
 )
 
-const ACCESS_TOKEN_DURATION = time.Hour
-const SIGNKEY string="kdnjsndjnd*jdnj212md"
+const SIGNKEY string = "kdnjsndjnd*jdnj212md"
+
 type Login struct {
-	Username string `db:"username"`
-	Role     string `db:"role"`
+	Username   string `db:"username"`
+	Role       string `db:"role"`
+	IsVerified bool   `db:"isverified"`
 }
 
 func (l Login) GenerateToken() (*string, *errs.AppError) {
 
-	var claims jwt.MapClaims
-
-
-	claims = l.claimsForAdmin()
+	claims := l.ClaimsForAccessToken()
 
 	logger.Info(fmt.Sprintf("Claims is %s", claims))
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedTokenAsString, err := token.SignedString([]byte(SIGNKEY))
+	// token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	if err != nil {
-		logger.Error("Failed while signing the token " + err.Error())
-		return nil, errs.NewUnexpectedError("Cannot generate token")
+	authToken := NewAuthToken(claims)
+	accessToken, appErr := authToken.NewAccessToken()
+
+	if appErr != nil {
+		// appErr.Error("Failed while signing the token " + err.Error())
+		return nil, appErr
 	}
-	return &signedTokenAsString, nil
+
+	// signedTokenAsString, err := token.SignedString([]byte(SIGNKEY))
+
+	// if err != nil {
+	// 	logger.Error("Failed while signing the token " + err.Error())
+	// 	return nil, errs.NewUnexpectedError("Cannot generate token")
+	// }
+	return &accessToken, nil
 }
 
-//
-//func (l Login) ClaimsForAccessToken() AccessTokenClaims {
-//	if l.Accounts.Valid && l.CustomerId.Valid {
-//		return l.claimsForUser()
-//	} else {
-//		return l.claimsForAdmin()
-//	}
-//}
-//
-func (l Login) claimsForUser() jwt.MapClaims {
+func (l Login) ClaimsForAccessToken() AccessTokenClaims {
+	if l.Role == "User" {
+		return l.claimsForUser()
+	} else {
+		return l.claimsForAdmin()
+	}
+}
+
+func (l Login) claimsForUser() AccessTokenClaims {
 	//projects := strings.Split(l.Project_id.String, ",")
-	return jwt.MapClaims{
+	return AccessTokenClaims{
 
-		"Username": l.Username,
-		"Role":     l.Role,
+		Username: l.Username,
+		Role:     l.Role,
 
-		"exp": time.Now().Add(ACCESS_TOKEN_DURATION).Unix(),
+		StandardClaims: jwt.StandardClaims{
+
+			ExpiresAt: time.Now().Add(ACCESS_TOKEN_DURATION).Unix(),
+		},
 	}
 }
 
-func (l Login) claimsForAdmin() jwt.MapClaims {
-	return jwt.MapClaims{
-		"Username": l.Username,
-		"Role":     l.Role,
-		"exp":      time.Now().Add(ACCESS_TOKEN_DURATION).Unix(),
+func (l Login) claimsForAdmin() AccessTokenClaims {
+	return AccessTokenClaims{
+		Username: l.Username,
+		Role:     l.Role,
+		StandardClaims: jwt.StandardClaims{
+
+			ExpiresAt: time.Now().Add(ACCESS_TOKEN_DURATION).Unix(),
+		},
 	}
 }

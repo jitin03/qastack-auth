@@ -9,6 +9,7 @@ import (
 	"github.com/jitin07/qastackauth/domain"
 	"github.com/jitin07/qastackauth/logger"
 	"github.com/jitin07/qastackauth/service"
+	"github.com/jitin07/qastackauth/utils"
 	"github.com/jmoiron/sqlx"
 	"github.com/rs/cors"
 
@@ -50,15 +51,24 @@ func getDbClient() *sqlx.DB {
 
 func Start() {
 
-	//sanityCheck()
+	logger := utils.NewLogger()
+
+	configs := utils.NewConfigurations(logger)
+
+	// validator contains all the methods that are need to validate the user json in request
+	validator := domain.NewValidation()
+
+	// mailService contains the utility methods to send an email
+	mailService := service.NewSGMailService(logger, configs)
 
 	router := mux.NewRouter()
 	dbClient := getDbClient()
 
 	router.Use()
 	userRepositoryDb := domain.NewUserRepositoryDb(dbClient)
+	defer dbClient.Close()
 	//wiring
-	u := UserHandlers{service.NewUserService(userRepositoryDb, domain.GetRolePermissions())}
+	u := UserHandlers{service.NewUserService(userRepositoryDb, domain.GetRolePermissions()), mailService, logger, configs, validator}
 
 	// define routes
 
@@ -79,25 +89,25 @@ func Start() {
 
 	router.HandleFunc("/auth/login", u.Login).Methods(http.MethodPost)
 
+	router.HandleFunc("/auth/refresh", u.Refresh).Methods(http.MethodPost)
+
 	router.HandleFunc("/auth/verify", u.Verify).Methods(http.MethodGet)
-	//router.
-	//	HandleFunc("/customers/{customer_id:[0-9]+}", ch.getCustomer).
-	//	Methods(http.MethodGet).
-	//	Name("GetCustomer")
-	//router.
-	//	HandleFunc("/customers/{customer_id:[0-9]+}/account", ah.NewAccount).
-	//	Methods(http.MethodPost).
-	//	Name("NewAccount")
-	//router.
-	//	HandleFunc("/customers/{customer_id:[0-9]+}/account/{account_id:[0-9]+}", ah.MakeTransaction).
-	//	Methods(http.MethodPost).
-	//	Name("NewTransaction")
-	//
-	//am := AuthMiddleware{domain.NewAuthRepository()}
-	//router.Use(am.authorizationHandler())
-	//// starting server
-	//address := os.Getenv("SERVER_ADDRESS")
-	//port := os.Getenv("SERVER_PORT")
+
+	mailR := router.PathPrefix("/verify").Methods(http.MethodGet).Subrouter()
+	mailR.HandleFunc("/email", u.VerifyMail)
+	mailR.HandleFunc("/password-reset", u.VerifyPasswordReset)
+	// mailR.Use(u.MiddlewareValidateVerificationData)
+
+	getR := router.Methods(http.MethodGet).Subrouter()
+
+	getR.HandleFunc("/get-password-reset-code", u.GeneratePassResetCode)
+	// getR.Use(u.MiddlewareValidateAccessToken)
+
+	putR := router.Methods(http.MethodPut).Subrouter()
+
+	putR.HandleFunc("/reset-password", u.ResetPassword)
+
+	// putR.Use(u.MiddlewareValidateAccessToken)
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
