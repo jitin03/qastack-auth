@@ -94,7 +94,7 @@ func Start() {
 	router.HandleFunc("/auth/verify", u.Verify).Methods(http.MethodGet)
 
 	mailR := router.PathPrefix("/verify").Methods(http.MethodGet).Subrouter()
-	mailR.HandleFunc("/mail", u.VerifyMail)
+	mailR.HandleFunc("/email", u.VerifyMail)
 	mailR.HandleFunc("/password-reset", u.VerifyPasswordReset)
 	// mailR.Use(u.MiddlewareValidateVerificationData)
 

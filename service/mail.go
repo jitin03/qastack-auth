@@ -1,6 +1,8 @@
 package service
 
 import (
+	"os"
+
 	"github.com/hashicorp/go-hclog"
 	"github.com/jitin07/qastackauth/utils"
 	"github.com/labstack/gommon/log"
@@ -84,7 +86,7 @@ func (ms *SGMailService) CreateMail(mailReq *Mail) []byte {
 // SendMail creates a sendgrid mail from the given mail request and sends it.
 func (ms *SGMailService) SendMail(mailReq *Mail) error {
 
-	request := sendgrid.GetRequest("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", "/v3/mail/send", "https://api.sendgrid.com")
+	request := sendgrid.GetRequest(os.Getenv("SEND_GRID_KEY"), "/v3/mail/send", "https://api.sendgrid.com")
 	request.Method = "POST"
 	var Body = ms.CreateMail(mailReq)
 	request.Body = Body
