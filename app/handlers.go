@@ -81,6 +81,7 @@ func (u UserHandlers) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		if appError != nil {
 
 			u.logger.Error("unable to insert user to database", "error", err)
+			w.WriteHeader(http.StatusInternalServerError)
 			ToJSON(&dto.GenericResponse{Status: false, Message: dto.UserCreationFailed}, w)
 			return
 

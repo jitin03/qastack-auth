@@ -1,5 +1,13 @@
 FROM golang:alpine AS builder
 
+
+
+# This will download all certificates (ca-certificates) and builds it in a
+# single file under /etc/ssl/certs/ca-certificates.crt (update-ca-certificates)
+# I also add git so that we can download with `go mod download` and
+# tzdata to configure timezone in final image
+RUN apk --update add --no-cache ca-certificates openssl git tzdata && \
+update-ca-certificates
 # Set necessary environmet variables needed for our image
 ENV GO111MODULE=on \
     CGO_ENABLED=0 \
@@ -41,6 +49,9 @@ FROM scratch
 
 COPY --from=builder /dist/main /
 #COPY ./database/data.json /database/data.json
+
+# This line will copy all certificates to final image
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 EXPOSE 8090
 # Command to run the executable
