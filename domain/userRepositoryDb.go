@@ -43,7 +43,7 @@ func (repo UserRepositoryDb) UpdatePassword(ctx context.Context, email string, p
 }
 func (d UserRepositoryDb) FindBy(username, password string) (*Login, *errs.AppError) {
 	var login Login
-	sqlVerify := "SELECT username ,role,isverified FROM users   WHERE username = $1 and password = $2"
+	sqlVerify := "SELECT username ,role,isverified FROM users   WHERE email = $1 and password = $2"
 	err := d.client.Get(&login, sqlVerify, username, password)
 	if err != nil {
 		if err == sql.ErrNoRows {

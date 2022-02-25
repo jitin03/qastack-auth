@@ -182,7 +182,7 @@ func (s DefaultUserService) Login(req dto.LoginRequest) (*dto.LoginResponse, *er
 	var appErr *errs.AppError
 	var login *domain.Login
 
-	if login, appErr = s.repo.FindBy(req.Username, req.Password); appErr != nil {
+	if login, appErr = s.repo.FindBy(req.Emailaddress, req.Password); appErr != nil {
 		return nil, appErr
 	}
 
