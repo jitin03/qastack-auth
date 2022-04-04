@@ -41,9 +41,24 @@ func (repo UserRepositoryDb) UpdatePassword(ctx context.Context, email string, p
 	_, err := repo.client.ExecContext(ctx, query, password, tokenHash, email)
 	return err
 }
+
+func (d UserRepositoryDb) GetAuthorisedRoutes(role_name string, email string) (*RolePermission, *errs.AppError) {
+	var rolePermission RolePermission
+	sqlVerify := "select routes from public.role_permission rp where role_id in (select id from public.roles where role_name=$1) and user_id in (select user_id from public.users where email=$2)"
+	err := d.client.Get(&rolePermission, sqlVerify, role_name, email)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errs.NewAuthenticationError("invalid credentials")
+		} else {
+			logger.Error("Error while verifying login request from database: " + err.Error())
+			return nil, errs.NewUnexpectedError("Unexpected database error")
+		}
+	}
+	return &rolePermission, nil
+}
 func (d UserRepositoryDb) FindBy(username, password string) (*Login, *errs.AppError) {
 	var login Login
-	sqlVerify := "SELECT username ,role,isverified FROM users   WHERE email = $1 and password = $2"
+	sqlVerify := "SELECT username ,role,isverified,email FROM users   WHERE email = $1 and password = $2"
 	err := d.client.Get(&login, sqlVerify, username, password)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -179,11 +194,22 @@ func (repo UserRepositoryDb) GetVerificationData(ctx context.Context, email stri
 	}
 	return &verificationData, nil
 }
+
 func (repo UserRepositoryDb) GetVerificationDataPasswordReset(ctx context.Context, email string, codeType int) (*VerificationData, error) {
 	query := "select * from verifications where email = $1 and type = $2"
 
 	var verificationData VerificationData
 	if err := repo.client.GetContext(ctx, &verificationData, query, email, codeType); err != nil {
+		return nil, err
+	}
+	return &verificationData, nil
+}
+
+func (repo UserRepositoryDb) GetVerificationDataUserInvite(ctx context.Context, email string) (*VerificationData, error) {
+	query := "select * from users where email = $1"
+
+	var verificationData VerificationData
+	if err := repo.client.GetContext(ctx, &verificationData, query, email); err != nil {
 		return nil, err
 	}
 	return &verificationData, nil

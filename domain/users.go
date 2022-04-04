@@ -7,6 +7,7 @@ import (
 
 	"github.com/jitin07/qastackauth/dto"
 	"github.com/jitin07/qastackauth/errs"
+	"github.com/jmoiron/sqlx/types"
 )
 
 type Users struct {
@@ -37,8 +38,19 @@ func (user Users) ToNewUserResponseDto() *dto.NewUserRegisterResponse {
 	return &dto.NewUserRegisterResponse{user.User_Id}
 }
 
+func (t RolePermission) ToAllRoutesDto() AllRoutes {
+	return AllRoutes{
+		Routes: t.Routes,
+	}
+}
+
+type AllRoutes struct {
+	Routes types.JSONText `json:"routes"`
+}
+
 type UsersRepository interface {
 	AddUser(user Users) (*Users, *errs.AppError)
+	GetAuthorisedRoutes(role_name string, email string) (*RolePermission, *errs.AppError)
 	GetUserByUsername(string) (*Users, *errs.AppError)
 	GetAllUser() ([]Users, *errs.AppError)
 	FindBy(username string, password string) (*Login, *errs.AppError)
@@ -47,6 +59,7 @@ type UsersRepository interface {
 	StoreVerificationData(ctx context.Context, verificationData *VerificationData) *errs.AppError
 	GetVerificationData(ctx context.Context, email string, verificationDataType *VerificationDataType) (*VerificationData, error)
 	GetVerificationDataPasswordReset(ctx context.Context, email string, codetype int) (*VerificationData, error)
+	GetVerificationDataUserInvite(ctx context.Context, email string) (*VerificationData, error)
 	UpdateUserVerificationStatus(ctx context.Context, email string, status bool) error
 	DeleteVerificationData(ctx context.Context, email string, verificationDataType VerificationDataType) error
 	GetUserByID(ctx context.Context, userID string) (*Users, error)

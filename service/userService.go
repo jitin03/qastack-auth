@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -31,11 +33,11 @@ type UserService interface {
 	GetUserByEmail(ctx context.Context, email string) (*domain.Users, error)
 	UpdatePassword(ctx context.Context, email string, password string, tokenHash string) error
 	GetVerificationDataPasswordReset(ctx context.Context, email string, codetype int) (*domain.VerificationData, error)
+	GetVerificationDataUserInvite(ctx context.Context, email string) (*domain.VerificationData, error)
 }
 
 type DefaultUserService struct {
-	repo            domain.UsersRepository
-	rolePermissions domain.RolePermissions
+	repo domain.UsersRepository
 }
 
 func jwtTokenFromString(tokenString string) (*jwt.Token, error) {
@@ -125,6 +127,15 @@ func (s DefaultUserService) GetVerificationDataPasswordReset(ctx context.Context
 	}
 	return actualVerificationData, nil
 }
+
+func (s DefaultUserService) GetVerificationDataUserInvite(ctx context.Context, email string) (*domain.VerificationData, error) {
+	actualVerificationData, appError := s.repo.GetVerificationDataUserInvite(ctx, email)
+	if appError != nil {
+
+		return nil, appError
+	}
+	return actualVerificationData, nil
+}
 func (s DefaultUserService) Refresh(request dto.RefreshTokenRequest) (*dto.LoginResponse, *errs.AppError) {
 	if vErr := request.IsAccessTokenValid(); vErr != nil {
 		if vErr.Errors == jwt.ValidationErrorExpired {
@@ -146,6 +157,8 @@ func (s DefaultUserService) Refresh(request dto.RefreshTokenRequest) (*dto.Login
 }
 
 func (s DefaultUserService) Verify(urlParams map[string]string) *errs.AppError {
+	var routeError *errs.AppError
+	var routes *domain.RolePermission
 	// convert the string token to JWT struct
 	if jwtToken, err := jwtTokenFromString(urlParams["token"]); err != nil {
 		return errs.NewAuthorizationError(err.Error())
@@ -168,8 +181,31 @@ func (s DefaultUserService) Verify(urlParams map[string]string) *errs.AppError {
 				}
 			}
 			// verify of the role is authorized to use the route
-			isAuthorized := s.rolePermissions.IsAuthorizedFor(claims.Role, urlParams["routeName"])
-			if !isAuthorized {
+			// urlParams["routeName"]
+			log.Info(claims.Role)
+			log.Info(claims.Email)
+			if routes, routeError = s.repo.GetAuthorisedRoutes(claims.Role, claims.Email); err != nil {
+				return routeError
+			}
+
+			var route []string
+			response := routes.ToAllRoutesDto()
+			var isAuthorised bool
+			// log.Info(response.Routes.String())
+
+			json.Unmarshal([]byte(response.Routes.String()), &route)
+
+			log.Info(route)
+			for _, r := range route {
+
+				if r == strings.TrimSpace(urlParams["routeName"]) {
+					log.Info("Permission granted")
+					isAuthorised = true
+				}
+			}
+
+			log.Info(isAuthorised)
+			if !isAuthorised {
 				return errs.NewAuthorizationError(fmt.Sprintf("%s role is not authorized", claims.Role))
 			}
 			return nil
@@ -257,6 +293,6 @@ func (s DefaultUserService) GetUserByUsername(username string) (*dto.UsersRespon
 	return &response, nil
 }
 
-func NewUserService(repository domain.UsersRepository, permissions domain.RolePermissions) DefaultUserService {
-	return DefaultUserService{repository, permissions}
+func NewUserService(repository domain.UsersRepository) DefaultUserService {
+	return DefaultUserService{repository}
 }

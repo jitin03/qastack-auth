@@ -433,3 +433,140 @@ func (ah *UserHandlers) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	ToJSON(&dto.GenericResponse{Status: false, Message: "Password Reset Successfully"}, w)
 }
+
+func (ah *UserHandlers) SetupAccount(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	email := r.URL.Query().Get("email")
+	code := r.URL.Query().Get("code")
+
+	var passResetReq dto.PasswordResetReq
+	passResetReq.Code = code
+	if err := json.NewDecoder(r.Body).Decode(&passResetReq); err != nil {
+
+		ah.logger.Error("unable to decode password reset request json", "error", err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		ToJSON(&dto.GenericResponse{Status: false, Message: err.Error()}, w)
+		return
+	}
+
+	log.Info(email)
+	user, err := ah.service.GetUserByEmail(context.Background(), email)
+	if err != nil {
+		ah.logger.Error("unable to retrieve the user from db", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		ToJSON(&dto.GenericResponse{Status: false, Message: "Unable to reset password. Please try again later"}, w)
+		return
+	}
+
+	actualVerificationData, err := ah.service.GetVerificationDataPasswordReset(context.Background(), user.Email, 3)
+
+	if err != nil {
+		ah.logger.Error("unable to fetch verification data", "error", err)
+
+		if strings.Contains(err.Error(), dto.PgNoRowsMsg) {
+			w.WriteHeader(http.StatusNotAcceptable)
+			ToJSON(&dto.GenericResponse{Status: false, Message: dto.ErrUserNotFound}, w)
+			return
+		}
+
+		w.WriteHeader(http.StatusInternalServerError)
+		ToJSON(&dto.GenericResponse{Status: false, Message: "Unable to verify mail. Please try again later"}, w)
+		return
+	}
+
+	if actualVerificationData.Code != passResetReq.Code {
+		// we should never be here.
+		ah.logger.Error("verification code did not match even after verifying PassReset")
+		w.WriteHeader(http.StatusInternalServerError)
+		ToJSON(&dto.GenericResponse{Status: false, Message: "Unable to reset password. Please try again later"}, w)
+		return
+	}
+
+	if passResetReq.Password != passResetReq.PasswordRe {
+		ah.logger.Error("password and password re-enter did not match")
+		w.WriteHeader(http.StatusNotAcceptable)
+		ToJSON(&dto.GenericResponse{Status: false, Message: "Password and re-entered Password are not same"}, w)
+		return
+	}
+
+	// hashedPass, err := ah.hashPassword(passResetReq.Password)
+	// if err != nil {
+	// 	w.WriteHeader(http.StatusInternalServerError)
+	// 	data.ToJSON(&GenericResponse{Status: false, Message: UserCreationFailed}, w)
+	// 	return
+	// }
+
+	tokenHash := utils.GenerateRandomString(15)
+	err = ah.service.UpdatePassword(context.Background(), email, passResetReq.Password, tokenHash)
+	if err != nil {
+		ah.logger.Error("unable to update user password in db", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		ToJSON(&dto.GenericResponse{Status: false, Message: "Password and re-entered Password are not same"}, w)
+		return
+	}
+
+	// delete the VerificationData from db
+	err = ah.service.DeleteVerificationData(context.Background(), actualVerificationData.Email, actualVerificationData.Type)
+	if err != nil {
+		ah.logger.Error("unable to delete the verification data", "error", err)
+	}
+
+	w.WriteHeader(http.StatusOK)
+	ToJSON(&dto.GenericResponse{Status: false, Message: "Account setup has done Successfully"}, w)
+}
+
+func (u UserHandlers) VerifyInvitation(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Type", "application/json")
+
+	log.Info("verifying the confimation code")
+	verificationData := domain.VerificationData{}
+	verificationData.Type = 3
+	verificationData.Email = r.URL.Query().Get("email")
+	verificationData.Code = r.URL.Query().Get("code")
+
+	log.Info(verificationData.Type)
+	actualVerificationData, err := u.service.GetVerificationData(context.Background(), verificationData.Email, &verificationData.Type)
+	if err != nil {
+		log.Info("unable to fetch verification data", "error", err)
+
+		if strings.Contains(err.Error(), dto.PgNoRowsMsg) {
+			w.WriteHeader(http.StatusNotAcceptable)
+			ToJSON(&dto.GenericResponse{Status: false, Message: dto.ErrUserNotFound}, w)
+			return
+		}
+
+		w.WriteHeader(http.StatusInternalServerError)
+		ToJSON(&dto.GenericResponse{Status: false, Message: "Unable to verify mail. Please try again later"}, w)
+		return
+	}
+
+	valid, err := u.verify(actualVerificationData, &verificationData)
+	if !valid {
+		w.WriteHeader(http.StatusNotAcceptable)
+		ToJSON(&dto.GenericResponse{Status: false, Message: err.Error()}, w)
+		return
+	}
+
+	// correct code, update user status to verified.
+	err = u.service.UpdateUserVerificationStatus(context.Background(), verificationData.Email, true)
+	if err != nil {
+		log.Info("unable to set user verification status to true")
+		w.WriteHeader(http.StatusInternalServerError)
+		ToJSON(&dto.GenericResponse{Status: false, Message: "Unable to verify mail. Please try again later"}, w)
+		return
+	}
+
+	// // delete the VerificationData from db
+	// err = u.service.DeleteVerificationData(context.Background(), verificationData.Email, verificationData.Type)
+	// if err != nil {
+	// 	log.Info("unable to delete the verification data", "error", err)
+	// }
+
+	// log.Info("user mail verification succeeded")
+
+	w.WriteHeader(http.StatusAccepted)
+	ToJSON(&dto.GenericResponse{Status: true, Message: "Mail Verification succeeded"}, w)
+}

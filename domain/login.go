@@ -14,6 +14,7 @@ const SIGNKEY string = "kdnjsndjnd*jdnj212md"
 type Login struct {
 	Username   string `db:"username"`
 	Role       string `db:"role"`
+	Email      string `db:"email"`
 	IsVerified bool   `db:"isverified"`
 }
 
@@ -56,6 +57,7 @@ func (l Login) claimsForUser() AccessTokenClaims {
 
 		Username: l.Username,
 		Role:     l.Role,
+		Email:    l.Email,
 
 		StandardClaims: jwt.StandardClaims{
 
@@ -68,6 +70,7 @@ func (l Login) claimsForAdmin() AccessTokenClaims {
 	return AccessTokenClaims{
 		Username: l.Username,
 		Role:     l.Role,
+		Email:    l.Email,
 		StandardClaims: jwt.StandardClaims{
 
 			ExpiresAt: time.Now().Add(ACCESS_TOKEN_DURATION).Unix(),

@@ -68,7 +68,7 @@ func Start() {
 	userRepositoryDb := domain.NewUserRepositoryDb(dbClient)
 	defer dbClient.Close()
 	//wiring
-	u := UserHandlers{service.NewUserService(userRepositoryDb, domain.GetRolePermissions()), mailService, logger, configs, validator}
+	u := UserHandlers{service.NewUserService(userRepositoryDb), mailService, logger, configs, validator}
 
 	// define routes
 
@@ -106,6 +106,9 @@ func Start() {
 	putR := router.Methods(http.MethodPut).Subrouter()
 
 	putR.HandleFunc("/reset-password", u.ResetPassword)
+	putR.HandleFunc("/setup-account", u.SetupAccount)
+
+	router.HandleFunc("/api/verify/invite", u.VerifyInvitation).Methods(http.MethodGet).Name("VerifyInvitation")
 
 	// putR.Use(u.MiddlewareValidateAccessToken)
 
